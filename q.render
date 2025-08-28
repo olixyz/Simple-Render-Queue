@@ -1,0 +1,4 @@
+# For demo, see ./demo/q.render 
+switches: -jump -mod 0,5,2,8,1,9,3,7,4,6 -c 10
+
+# path/to/file.blend -c chunksize -f start-end, single, single
