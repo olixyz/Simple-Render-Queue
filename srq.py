@@ -19,7 +19,8 @@ class Simple_Queue:
         self.queue_raw_items = []  # each line describing a job as string
         self.frames_only_ending_on_mode = False
         atexit.register(self.__cleanup)
-        self.__process_queue()
+        self.render_cmd = None
+        self.__run()
 
     def __reset_after_chunk(self):
         self.sub_p.terminate()
@@ -28,6 +29,7 @@ class Simple_Queue:
         self.chunksize = 1
         self.queue_raw_items = []  # each line describing a job as string
         self.frames_only_ending_on_mode = False
+        self.render_cmd = None
 
     def __list_images(self, folder, match_string):
         found = []
@@ -180,24 +182,25 @@ class Simple_Queue:
 
             # use chunksize to create a chunk of renderable frames
             first_chunk = missing[: self.chunksize]
+            self.last_job_index = index
             if len(first_chunk):
                 # blender -b engine.96.take_text_main.blend -a 1001,1002,
-                render_command = "blender {} --background --factory-startup --render-frame {}".format(
+                self.render_cmd = "blender {} --background --factory-startup --render-frame {}".format(
                     scenepath, ",".join(str(x) for x in first_chunk)
                 )
-                # print(render_command)
-                # print("\n\n-------------------")
+                # Found a chunk to render
+                break
 
-                self.last_job_index = index
-                self.__render(render_command)
-
-    def __render(self, cmd):
+    def __render(self):
         print("------------\nRENDERING:")
         print(self.switches)
         print("Global chunksize: ", self.use_global_chunksize)
-        print("\n".join(cmd.split()))
+        print("\n".join(self.render_cmd.split()))
         self.sub_p = subprocess.Popen(
-            cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            self.render_cmd.split(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
 
         # while True:
@@ -209,8 +212,16 @@ class Simple_Queue:
         output, errors = self.sub_p.communicate()
         print("\nChunk done\n")
 
-        self.__reset_after_chunk()
-        self.__process_queue()
+    def __run(self):
+        done = False
+        while not done:
+            self.__process_queue()
+            if type(self.render_cmd) == str:
+                self.__render()
+                self.__reset_after_chunk()
+            else:
+                print("Queue finished")
+                done = True
 
     def __cleanup(self):
         print("Cleanup...")
