@@ -30,18 +30,14 @@ The queue can contain a line with global switches:
 The compositing file could even be added as the last job in the queue and thereby output comped frames
 for frames where all required pass/take frames are present.
 
-## Running the script
+## Stop Rendering
+
+Interrupt the script with `CTRL c`. A cleanup function will terminate the render subprocess.
+
+## Running the script/demo
 
 Run the script and specify the queue file:
 
 ```sh
-python srq.py /path/to/q.render
-```
-
-## Run the demo
-
-This renders all .blend-files in the ./demo folder:
-
-```sh
-python srq.py ./demo/q.render
+python simple_render_queue.py q.render
 ```
