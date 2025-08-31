@@ -14,6 +14,8 @@ Flags are:
 The queue can be updated and changed.
 After finishing a chunk, the script reads the file again and reacts to the changes.
 
+The script looks at the [output directories](#output-directories) of each job to figure out the list of missing frames.
+
 ## Global Switches
 
 The queue can contain a line with global switches:
@@ -33,6 +35,42 @@ for frames where all required pass/take frames are present.
 ## Stop Rendering
 
 Interrupt the script with `CTRL c`. A cleanup function will terminate the render subprocess.
+
+## Re-render frames
+
+The script checks the image sequences in the output directories to figure out the list of missing frames.
+If you want frames re-rendered, just delete them from the output.
+
+## Output Directories
+
+The output follows my own convention using _takes_ (variations of a scenefile, e.g. passes):
+
+`directory_of_blendfile/render/takename/takename.####.fileext`
+
+The _takename_ is the part of the filename after a `.` (_dot_).<br>
+
+```sh
+.
+└── scenename/
+    ├── render/
+    │   ├── take_a/
+    │   │   └── take_a.####.exr
+    │   ├── take_b/
+    │   │   └── take_b.####.exr
+    │   └── take_c/
+    │       └── take_c.####.exr
+    ├── scenename.take_a.blend
+    ├── scenename.take_b.blend
+    └── scenename.take_c.blend
+```
+
+Example:<br>
+`eng-010_010-anim-v100.take_beauty_all.blend`
+
+The render output will be (in the directory of the .blend file) in:<br>
+`./render/take_beauty_all/take_beauty_all.####.exr`
+
+**This output needs to be set in the .blend file. It is not set by this script!**
 
 ## Running the script/demo
 
