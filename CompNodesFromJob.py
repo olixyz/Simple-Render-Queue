@@ -3,6 +3,16 @@ import os
 import bpy
 
 
+def __output_from_scenefile(scenefile_path):
+    scenefile = os.path.basename(scenefile_path)
+    scenefile_no_ext = os.path.splitext(scenefile)[0]
+    scenefile_dir = os.path.dirname(scenefile_path)
+    output_dir = os.path.join(scenefile_dir, "render", scenefile_no_ext)
+    output_file = os.path.join(output_dir, scenefile_no_ext + ".")
+
+    return [output_dir, output_file, scenefile_no_ext]
+
+
 def process_job(job_string):
 
     # Extract filepath (before any flags)
@@ -11,7 +21,7 @@ def process_job(job_string):
     f_match = re.search(r"-f\s+(\S+)", job_string)
 
     found_frame = None
-    takename = None
+    # takename = None
     framerange = []
 
     if f_match:
@@ -20,27 +30,23 @@ def process_job(job_string):
         framerange.append(int(range_as_string[1]))
 
     if filepath_match:
+
         scenefile_path = filepath_match.group(1)
-        # extract filename from path.
-        scenefile = os.path.basename(scenefile_path)
-        scenefile_no_ext = os.path.splitext(scenefile)[0]
+        [output_dir, output_file, scenefile_no_ext] = __output_from_scenefile(
+            scenefile_path
+        )
 
-        # By my convention, the take name is a suffix
-        # appended to the filename after a dot:
-        takename = scenefile_no_ext.split(".")[-1]
+        # output_path = os.path.join(os.path.dirname(scenefile_path), "render", takename)
+        found_frame = os.listdir(output_dir)[0]
 
-        # By my convention, the output is next to the scenefile_path
-        # in a folder called "render" and inside is a folder per take
-        output_path = os.path.join(os.path.dirname(scenefile_path), "render", takename)
-        found_frame = os.listdir(output_path)[0]
         if found_frame:
-            found_frame = os.path.join(output_path, found_frame)
+            found_frame = os.path.join(output_dir, found_frame)
 
-    if found_frame and takename and len(framerange):
-        compositing_nodes(found_frame, takename, framerange)
+        if found_frame and len(framerange):
+            compositing_nodes(found_frame, scenefile_no_ext, framerange)
 
 
-def compositing_nodes(output, takename, framerange):
+def compositing_nodes(output, imagename, framerange):
 
     head_in = framerange[0]
     tail_out = framerange[1]
@@ -51,7 +57,7 @@ def compositing_nodes(output, takename, framerange):
     # found_filename = os.path.basename(output)
     # found_name_only = file_seq.rsplit('/', 1)[1]
 
-    node_group = bpy.data.node_groups.new(takename, "CompositorNodeTree")
+    node_group = bpy.data.node_groups.new(imagename, "CompositorNodeTree")
     node_group.use_fake_user = True
     # image = bpy.data.images.load(found_seq_full_path)
     print("Output:", output)
@@ -63,7 +69,7 @@ def compositing_nodes(output, takename, framerange):
     image.source = "SEQUENCE"
     image_node.frame_start = head_in
     image_node.frame_duration = tail_out - head_in
-    image_node.label = takename
+    image_node.label = imagename
 
     # need offset of -1 to line up
     image_node.frame_offset = framerange[0] - 1
@@ -114,11 +120,18 @@ def compositing_nodes(output, takename, framerange):
     aover_nodeB.location.x = 400
     aover_nodeB.location.y = -250
 
+    if __name__ == "__main__":
+        # Uses the q.render job description,
+        # but only accepts one range after "-f" flag: e.g. "-f 1-100"
+        # It does not accept list with single frames or combined ranges and single frames!
 
-if __name__ == "__main__":
-    # This does not accept list with single frames or combined ranges and single frames!
-    # Use the line given by takes.log, e.g.:
-    # "/home/oliver/dev/bl_takes_dev/output/objects/objects.take_cone.blend -c 1 -f 1-100"
-    #
-    job = "/home/oliver/dev/bl_takes_dev/output/objects/objects.take_cone.blend -c 1 -f 1-100"
-    process_job(job)
+        # Specify path to directory of .blend files that were used for rendering:
+        local = "/path/to/render_files"
+
+        output_1 = "scene_1.blend -c 1 -f 1001-1200"
+        output_2 = "scene_2.blend -c 1 -f 1100-1150"
+
+        load = [output_1, output_2]
+
+        for job in load:
+            process_job(os.path.join(local, job))
