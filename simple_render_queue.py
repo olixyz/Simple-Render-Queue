@@ -32,9 +32,11 @@ class Simple_Queue:
         self.render_cmd = None
 
     def __list_images(self, folder, match_string):
+        # This script needs the output folder relative to this python script
         found = []
         # Early return if folder does not exist
         if not isdir(folder):
+            # print("output folder not found")
             return found
 
         for file in listdir(folder):
@@ -43,6 +45,7 @@ class Simple_Queue:
                 match = re.search(r"(\d+)(?=\.\w+$)", file)
                 if match:
                     found.append(int(match.group(1)))
+                    # print("Found frame number", int(match.group(1)))
         return found
 
     def __find_missing_in_sequence(self, frames_list, found):
@@ -74,10 +77,23 @@ class Simple_Queue:
     def __output_from_scenefile(self, scenefile_path):
         scenefile = basename(scenefile_path)
         scenefile_no_ext = splitext(scenefile)[0]
-        output_dir = join("//render", scenefile_no_ext)
-        output_file = join(output_dir, scenefile_no_ext + ".")
 
-        return [output_dir, output_file, scenefile_no_ext]
+        # Output relative to blender file
+        output_dir_blender_relative = join("//render", scenefile_no_ext)
+
+        # Output relative to this script:
+        output_dir_script_relative = join(
+            dirname(scenefile_path), "render", scenefile_no_ext
+        )
+
+        output_file = join(output_dir_blender_relative, scenefile_no_ext + ".")
+
+        return [
+            output_dir_blender_relative,
+            output_dir_script_relative,
+            output_file,
+            scenefile_no_ext,
+        ]
 
     def __parse_switches(self, switches_raw):
         s = switches_raw.split(":")
@@ -139,12 +155,15 @@ class Simple_Queue:
             frames_as_string = re.search(f_regex, q_item).group(1)
             frames = self.__frames_list_from_string(frames_as_string)
 
-            [output_dir, output_file, image_name] = self.__output_from_scenefile(
-                scenepath
-            )
+            [
+                output_dir_blender_relative,
+                output_dir_script_relative,
+                output_file,
+                image_name,
+            ] = self.__output_from_scenefile(scenepath)
 
             # Check output and find what is missing
-            found = self.__list_images(output_dir, image_name)
+            found = self.__list_images(output_dir_script_relative, image_name)
             missing = self.__find_missing_in_sequence(frames, found)
 
             # If -mod flag is given:
