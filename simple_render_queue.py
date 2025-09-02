@@ -72,24 +72,12 @@ class Simple_Queue:
         return frames
 
     def __output_from_scenefile(self, scenefile_path):
-        # extract filename from path.
         scenefile = basename(scenefile_path)
         scenefile_no_ext = splitext(scenefile)[0]
+        output_dir = join("//render", scenefile_no_ext)
+        output_file = join(output_dir, scenefile_no_ext + ".")
 
-        # By my convention, the take name is a suffix
-        # appended to the filename after a dot:
-        takename = scenefile_no_ext.split(".")[-1]
-
-        # print(scenefile)
-        # print(scenefile_no_ext)
-        # print(takename)
-
-        # By my convention, the output is next to the scenefile_path
-        # in a folder called "render" and inside is a folder per take
-        output_path = join(dirname(scenefile_path), "render", takename)
-
-        # The finale image name is just the takename
-        return [output_path, takename]
+        return [output_dir, output_file, scenefile_no_ext]
 
     def __parse_switches(self, switches_raw):
         s = switches_raw.split(":")
@@ -151,18 +139,15 @@ class Simple_Queue:
             frames_as_string = re.search(f_regex, q_item).group(1)
             frames = self.__frames_list_from_string(frames_as_string)
 
-            # print("chunksize", chunksize)
-            # print("frames\n", frames)
-
-            [output_path, image_name] = self.__output_from_scenefile(scenepath)
-            # print(output_path)
-            # print(image_name)
+            [output_dir, output_file, image_name] = self.__output_from_scenefile(
+                scenepath
+            )
 
             # Check output and find what is missing
-            found = self.__list_images(output_path, image_name)
+            found = self.__list_images(output_dir, image_name)
             missing = self.__find_missing_in_sequence(frames, found)
 
-            # If -mod flag is given
+            # If -mod flag is given:
             # goes through list of number after -mod flag
             # checks if missing frames end on number in list,
             # then renders them
@@ -184,9 +169,8 @@ class Simple_Queue:
             first_chunk = missing[: self.chunksize]
             self.last_job_index = index
             if len(first_chunk):
-                # blender -b engine.96.take_text_main.blend -a 1001,1002,
-                self.render_cmd = "blender {} --background --factory-startup --render-frame {}".format(
-                    scenepath, ",".join(str(x) for x in first_chunk)
+                self.render_cmd = "blender {} --background --factory-startup --render-output {} --render-frame {}".format(
+                    scenepath, output_file, ",".join(str(x) for x in first_chunk)
                 )
                 # Found a chunk to render
                 break
