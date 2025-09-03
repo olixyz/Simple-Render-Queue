@@ -5,6 +5,7 @@ from posixpath import dirname
 import re
 import subprocess
 import sys
+import time
 
 
 class Simple_Queue:
@@ -20,6 +21,7 @@ class Simple_Queue:
         self.frames_only_ending_on_mode = False
         atexit.register(self.__cleanup)
         self.render_cmd = None
+        self.missing_frames_count = 0
         self.__run()
 
     def __reset_after_chunk(self):
@@ -30,6 +32,7 @@ class Simple_Queue:
         self.queue_raw_items = []  # each line describing a job as string
         self.frames_only_ending_on_mode = False
         self.render_cmd = None
+        self.missing_frames_count = 0
 
     def __list_images(self, folder, match_string):
         # This script needs the output folder relative to this python script
@@ -109,25 +112,30 @@ class Simple_Queue:
         return False
 
     def __process_queue(self):
-        with open(self.q_file, "r") as f:
-            for line in f.readlines():
-                # Ignore comments and empty lines
-                # Save switches seperately
-                if (
-                    not line.startswith("#")
-                    and line.strip()
-                    and not line.startswith("switches:")
-                ):
-                    self.queue_raw_items.append(line.strip())
-                if line.startswith("switches:"):
-                    switches_raw = line.strip()
-                    # s = line.split("switches:")
-                    self.__parse_switches(switches_raw)
-                    self.use_global_chunksize = True
-            if not self.use_global_chunksize:
-                self.switches.clear()
+        try:
+            with open(self.q_file, "r") as f:
+                for line in f.readlines():
+                    # Ignore comments and empty lines
+                    # Save switches seperately
+                    if (
+                        not line.startswith("#")
+                        and line.strip()
+                        and not line.startswith("switches:")
+                    ):
+                        self.queue_raw_items.append(line.strip())
+                    if line.startswith("switches:"):
+                        switches_raw = line.strip()
+                        # s = line.split("switches:")
+                        self.__parse_switches(switches_raw)
+                        self.use_global_chunksize = True
+                if not self.use_global_chunksize:
+                    self.switches.clear()
 
-            f.close()
+                f.close()
+        except OSError:
+            # print("Could not open/read file:", self.q_file)
+            time.sleep(1.0)
+            self.__run()
 
         for index, q_item in enumerate(self.queue_raw_items):
             # if switch is set to jump, compare last rendered index with current index.
@@ -165,6 +173,7 @@ class Simple_Queue:
             # Check output and find what is missing
             found = self.__list_images(output_dir_script_relative, image_name)
             missing = self.__find_missing_in_sequence(frames, found)
+            self.missing_frames_count = len(missing)
 
             # If -mod flag is given:
             # goes through list of number after -mod flag
@@ -196,6 +205,7 @@ class Simple_Queue:
 
     def __render(self):
         print("------------\nRENDERING:")
+        print("Found", str(self.missing_frames_count), "missing frames")
         print(self.switches)
         print("Global chunksize: ", self.use_global_chunksize)
         print("\n".join(self.render_cmd.split()))
@@ -222,9 +232,11 @@ class Simple_Queue:
             if type(self.render_cmd) == str:
                 self.__render()
                 self.__reset_after_chunk()
-            else:
-                print("Queue finished")
-                done = True
+            # else:
+            #     print("Job done")
+            #     time.sleep(0.5)
+            #     print("Next...")
+            #     done = True
 
     def __cleanup(self):
         print("Cleanup...")
