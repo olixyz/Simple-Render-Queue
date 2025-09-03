@@ -68,7 +68,7 @@ def compositing_nodes(output, imagename, framerange):
     image_node.image = image
     image.source = "SEQUENCE"
     image_node.frame_start = head_in
-    image_node.frame_duration = tail_out - head_in
+    image_node.frame_duration = (tail_out - head_in) + 1
     image_node.label = imagename
 
     # need offset of -1 to line up
