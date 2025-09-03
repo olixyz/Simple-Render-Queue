@@ -188,7 +188,7 @@ class Simple_Queue:
             first_chunk = missing[: self.chunksize]
             self.last_job_index = index
             if len(first_chunk):
-                self.render_cmd = "blender {} --background --factory-startup --render-output {} --render-frame {}".format(
+                self.render_cmd = "blender {} --background --factory-startup --render-output {} --render-frame {} --cycles-device CUDA".format(
                     scenepath, output_file, ",".join(str(x) for x in first_chunk)
                 )
                 # Found a chunk to render
