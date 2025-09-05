@@ -22,6 +22,8 @@ class Simple_Queue:
         atexit.register(self.__cleanup)
         self.render_cmd = None
         self.missing_frames_count = 0
+
+    def run(self):
         self.__run()
 
     def __reset_after_chunk(self):
@@ -34,7 +36,7 @@ class Simple_Queue:
         self.render_cmd = None
         self.missing_frames_count = 0
 
-    def __list_images(self, folder, match_string):
+    def list_images(self, folder, match_string):
         # This script needs the output folder relative to this python script
         found = []
         # Early return if folder does not exist
@@ -51,12 +53,12 @@ class Simple_Queue:
                     # print("Found frame number", int(match.group(1)))
         return found
 
-    def __find_missing_in_sequence(self, frames_list, found):
+    def find_missing_in_sequence(self, frames_list, found):
         missing = list(set(frames_list) - set(found))
         # print(len(missing), "missing frames")
         return missing
 
-    def __frames_list_from_string(self, frames_string):
+    def frames_list_from_string(self, frames_string):
         frames = []
         # split by ","
         f_split = frames_string.split(",")
@@ -77,7 +79,7 @@ class Simple_Queue:
                 frames.append(int(el))
         return frames
 
-    def __output_from_scenefile(self, scenefile_path):
+    def output_from_scenefile(self, scenefile_path):
         scenefile = basename(scenefile_path)
         scenefile_no_ext = splitext(scenefile)[0]
 
@@ -161,18 +163,18 @@ class Simple_Queue:
             if not self.use_global_chunksize:
                 self.chunksize = int(re.search(c_regex, q_item).group(1))
             frames_as_string = re.search(f_regex, q_item).group(1)
-            frames = self.__frames_list_from_string(frames_as_string)
+            frames = self.frames_list_from_string(frames_as_string)
 
             [
                 output_dir_blender_relative,
                 output_dir_script_relative,
                 output_file,
                 image_name,
-            ] = self.__output_from_scenefile(scenepath)
+            ] = self.output_from_scenefile(scenepath)
 
             # Check output and find what is missing
-            found = self.__list_images(output_dir_script_relative, image_name)
-            missing = self.__find_missing_in_sequence(frames, found)
+            found = self.list_images(output_dir_script_relative, image_name)
+            missing = self.find_missing_in_sequence(frames, found)
             self.missing_frames_count = len(missing)
 
             # If -mod flag is given:
@@ -249,3 +251,4 @@ class Simple_Queue:
 if __name__ == "__main__":
     queue = sys.argv[1]
     render = Simple_Queue(queue)
+    render.run()
