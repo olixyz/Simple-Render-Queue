@@ -62,9 +62,9 @@ class Simple_Queue:
         frames = []
         # split by ","
         f_split = frames_string.split(",")
-        # split result by "-"
+        # split result by ".."
         for el in f_split:
-            el_split = el.split("-")
+            el_split = el.split("..")
 
             if len(el_split) == 2:
                 # print("is range")
@@ -154,15 +154,24 @@ class Simple_Queue:
             if "-mod" in self.switches:
                 self.frames_only_ending_on_mode = True
 
-            scenepath_regex = r"^(.*?)(?= -c)"
-            c_regex = r"(?<= -c )(.*?)(?= -f)"
-            f_regex = r"(?<= -f )(.*)"
+            matches = re.findall(r"-(c|f|p)\s+([^-\s][^-\n]*)", q_item)
+            q_item_flags = {}
+            for m in matches:
+                q_item_flags[m[0]] = m[1]
 
-            scenepath = re.search(scenepath_regex, q_item).group(1)
+            scenepath = (
+                q_item.split(".blend")[0] + ".blend"
+            )  # requires path to be at front of line
+
+            override_script = ""
+            if "p" in q_item_flags:
+                override_script = q_item_flags["p"]
+
             # Set chunksize from job if not set from switches
             if not self.use_global_chunksize:
-                self.chunksize = int(re.search(c_regex, q_item).group(1))
-            frames_as_string = re.search(f_regex, q_item).group(1)
+                self.chunksize = int(q_item_flags["c"])
+
+            frames_as_string = q_item_flags["f"]
             frames = self.frames_list_from_string(frames_as_string)
 
             [
@@ -194,14 +203,17 @@ class Simple_Queue:
                     if len(matching_frames_in_missing):
                         missing = matching_frames_in_missing
                         break
-
             # use chunksize to create a chunk of renderable frames
             first_chunk = missing[: self.chunksize]
             self.last_job_index = index
             if len(first_chunk):
-                self.render_cmd = "blender {} --background --factory-startup --python overrides.py --render-output {} --render-frame {}".format(
-                    scenepath, output_file, ",".join(str(x) for x in first_chunk)
+                self.render_cmd = "blender {} --background --factory-startup {} --render-output {} --render-frame {}".format(
+                    scenepath,
+                    "--python " + override_script if len(override_script) else "",
+                    output_file,
+                    ",".join(str(x) for x in first_chunk),
                 )
+                print(self.render_cmd)
                 # Found a chunk to render
                 break
 
@@ -234,11 +246,6 @@ class Simple_Queue:
             if type(self.render_cmd) == str:
                 self.__render()
                 self.__reset_after_chunk()
-            # else:
-            #     print("Job done")
-            #     time.sleep(0.5)
-            #     print("Next...")
-            #     done = True
 
     def __cleanup(self):
         print("Cleanup...")

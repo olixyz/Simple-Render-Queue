@@ -4,12 +4,13 @@ This is a script for cli-rendering with Blender on a single machine.
 
 The queue is a simple text-file where each job is a line:
 
-`/path/to/blenderfile.blend -c 1 -f 1-100, 150, 151`
+`/path/to/blenderfile.blend -c 1 -f 1..100, 150, 151 -p render_settings.py`
 
 Flags are:
 
 - `-c` chunksize
 - `-f` frames to render: ranges and single frames
+- `-p` optional python script to make scene changes through Blenders API (e.g. use it for render settings)
 
 The queue can be updated and changed.
 After finishing a chunk, the script reads the file again and reacts to the changes.
@@ -24,7 +25,7 @@ The queue can contain a line with global switches:
 
 - `-jump` jump to next job after finishing a chunk
 - `-mod` only render frames that end on a number. This list is a progression: when all frames ending on `0` are rendered, continue with
-  frames ending on `2`
+  frames ending on `5`
 - `-c` a global chunksize override
 
 `-jump` combined with `-mod` is extremely helpful for getting frames of many passes/takes ready for compositing fast.
