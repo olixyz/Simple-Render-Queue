@@ -21,7 +21,7 @@ cycles.device = "GPU"
 
 bpy.context.scene.render.resolution_x = 1920
 bpy.context.scene.render.resolution_y = 1080
-bpy.context.scene.render.resolution_percentage = 100
+bpy.context.scene.render.resolution_percentage = 50
 
 cycles.use_adaptive_sampling = True
 cycles.adaptive_threshold = 0.1

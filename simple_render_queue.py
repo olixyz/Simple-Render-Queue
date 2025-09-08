@@ -154,7 +154,12 @@ class Simple_Queue:
             if "-mod" in self.switches:
                 self.frames_only_ending_on_mode = True
 
-            matches = re.findall(r"-(c|f|p)\s+([^-\s][^-\n]*)", q_item)
+            # matches = re.findall(r"-(c|f|p)\s+([^-\s][^-\n]*)", q_item)
+
+            matches = re.findall(
+                r"-(c|f|p)\s+((?:(?!\s+-\w)\S.*?)(?=\s+-\w|\s*$))", q_item
+            )
+
             q_item_flags = {}
             for m in matches:
                 q_item_flags[m[0]] = m[1]
