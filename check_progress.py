@@ -29,12 +29,19 @@ class Check_Progress:
 
         for index, q_item in enumerate(self.queue_raw_items):
 
-            scenepath_regex = r"^(.*?)(?= -c)"
-            # c_regex = r"(?<= -c )(.*?)(?= -f)"
-            f_regex = r"(?<= -f )(.*)"
+            scenepath = (
+                q_item.split(".blend")[0] + ".blend"
+            )  # requires path to be at front of line
 
-            scenepath = re.search(scenepath_regex, q_item).group(1)
-            frames_as_string = re.search(f_regex, q_item).group(1)
+            matches = re.findall(
+                r"-(c|f|p)\s+((?:(?!\s+-\w)\S.*?)(?=\s+-\w|\s*$))", q_item
+            )
+
+            q_item_flags = {}
+            for m in matches:
+                q_item_flags[m[0]] = m[1]
+
+            frames_as_string = q_item_flags["f"]
             frames = self.SQ.frames_list_from_string(frames_as_string)
             frames_count = len(frames)
 
